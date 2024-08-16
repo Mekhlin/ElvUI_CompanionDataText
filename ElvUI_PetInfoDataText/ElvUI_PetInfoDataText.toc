@@ -1,4 +1,4 @@
-## Interface: 100207,110000
+## Interface: 110002
 ## Title: ElvUI Pet Info DataText
 ## Notes: A DataText plugin for ElvUI that shows info about the active hunter pet.
 ## IconTexture: Interface\Icons\ability_hunter_beastcall

@@ -47,7 +47,11 @@ if not HasPetSupport() then
         return ""
     end
 
-    if HasPetUI() then
+    if HasPetUI() then        
+        if UnitHealth("pet") == 0 then
+            return TextColor(GetPlayerClassCreatureType() .. " is dead", "ffff0000")
+        end
+    
         return string.format("Active %s", GetPlayerClassCreatureType())
     end
 
@@ -151,10 +155,16 @@ end
 
 function HasBuff(spellId)
     for i = 1, 40 do
-        if select(10, UnitBuff("player", i)) == spellId then
+        local auraData = C_UnitAuras.GetBuffDataByIndex("player", i)
+        if auraData == nil then
+            return false
+        end
+        
+        if auraData.spellId == spellId then
             return true
         end
     end
+    
     return false
 end
 
