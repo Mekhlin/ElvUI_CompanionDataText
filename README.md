@@ -1,2 +1,2 @@
-# ElvUI - Pet Info DataText
+# ElvUI - Companion DataText
 DataText plugin for [ElvUI](https://tukui.org/elvui).

@@ -13,26 +13,26 @@ local classSupport = {
     DEATHKNIGHT = true
 }
 
-P["PetInfoDataText"] = {
+P["CompanionDataText"] = {
     hide_inactive_pet = false,
     pet_name_header = false,
 }
 
 -- Option page registration
 local function ConfigTable()
-    local function get(info) return E.db.PetInfoDataText[info[#info]] end
-    local function set(info, value) E.db.PetInfoDataText[info[#info]] = value; DT:ForceUpdate_DataText("PetInfoDataText") end
+    local function get(info) return E.db.CompanionDataText[info[#info]] end
+    local function set(info, value) E.db.CompanionDataText[info[#info]] = value; DT:ForceUpdate_DataText("CompanionDataText") end
 
-    E.Options.args.PetInfoDataText = ACH:Group("Pet Info DataText")
-    E.Options.args.PetInfoDataText.args.description = ACH:Description("DataText that shows information about the active pet", 1)
+    E.Options.args.CompanionDataText = ACH:Group("Companion DataText")
+    E.Options.args.CompanionDataText.args.description = ACH:Description("DataText that shows information about the active companion", 1)
     
-    E.Options.args.PetInfoDataText.args.datatext_settings = ACH:Group("DataText settings", nil, 2, nil, get, set)
-    E.Options.args.PetInfoDataText.args.datatext_settings.inline = true
-    E.Options.args.PetInfoDataText.args.datatext_settings.args.hide_inactive_pet = ACH:Toggle("Hide on inactive pet", "Hide text on DataText when no pet is summoned")
+    E.Options.args.CompanionDataText.args.datatext_settings = ACH:Group("DataText settings", nil, 2, nil, get, set)
+    E.Options.args.CompanionDataText.args.datatext_settings.inline = true
+    E.Options.args.CompanionDataText.args.datatext_settings.args.hide_inactive_pet = ACH:Toggle("Hide on inactive pet", "Hide text on DataText when no companion is summoned")
     
-    E.Options.args.PetInfoDataText.args.tooltip_settings = ACH:Group("Tooltip settings", nil, 3, nil, get, set)
-    E.Options.args.PetInfoDataText.args.tooltip_settings.inline = true
-    E.Options.args.PetInfoDataText.args.tooltip_settings.args.pet_name_header = ACH:Toggle("Use pet name as header", "Use name of pet as header on tooltip")
+    E.Options.args.CompanionDataText.args.tooltip_settings = ACH:Group("Tooltip settings", nil, 3, nil, get, set)
+    E.Options.args.CompanionDataText.args.tooltip_settings.inline = true
+    E.Options.args.CompanionDataText.args.tooltip_settings.args.pet_name_header = ACH:Toggle("Use name as header", "Use name of companion as header on tooltip")
 end
 
 EP:RegisterPlugin(..., ConfigTable)
@@ -55,7 +55,7 @@ if not HasPetSupport() then
         return string.format("Active %s", GetPlayerClassCreatureType())
     end
 
-    if not E.db.PetInfoDataText.hide_inactive_pet then
+    if not E.db.CompanionDataText.hide_inactive_pet then
         return string.format("No active %s", GetPlayerClassCreatureType():lower())
     end
     
@@ -68,11 +68,11 @@ local function OnEnter(self)
         return
     end
     
-    if not HasPetUI() and E.db.PetInfoDataText.hide_inactive_pet then
+    if not HasPetUI() and E.db.CompanionDataText.hide_inactive_pet then
         return
     end
 
-    if not HasPetUI() and not E.db.PetInfoDataText.hide_inactive_pet then
+    if not HasPetUI() and not E.db.CompanionDataText.hide_inactive_pet then
         DT:SetupTooltip(self)
         DT.tooltip:AddLine("No " .. GetPlayerClassCreatureType():lower() .. " summoned")
         DT.tooltip:Show()
@@ -87,7 +87,7 @@ local function OnEnter(self)
     local petMaxHealth = UnitHealthMax("pet")
     local petHealthPercent = (petHealth / petMaxHealth) * 100
 
-    if not E.db.PetInfoDataText.pet_name_header then
+    if not E.db.CompanionDataText.pet_name_header then
         DT.tooltip:AddLine(TextColor("Active " .. GetPlayerClassCreatureType(), "ffc0c0c0"))
         DT.tooltip:AddDoubleLine("Name", TextColor(petName or "Unknown", "ffffffff"))
     else
@@ -178,4 +178,4 @@ local function ValueColorUpdate(self, hex, r, g, b)
 end
 
 local events = { "PLAYER_ENTERING_WORLD", "UNIT_PET" }
-DT:RegisterDatatext("PetInfoDataText", nil, events, OnEvent, nil, nil, OnEnter, OnLeave, "Pet Info", nil, ValueColorUpdate)
+DT:RegisterDatatext("CompanionDataText", nil, events, OnEvent, nil, nil, OnEnter, OnLeave, "Companion", nil, ValueColorUpdate)
