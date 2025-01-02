@@ -1,10 +1,10 @@
-## Interface: 110002,110005
+## Interface: 110007
 ## Title: ElvUI Companion DataText
 ## Notes: A DataText plugin for ElvUI that shows info about the active companion.
 ## IconTexture: Interface\Icons\ability_hunter_beastcall
 ## RequiredDeps: ElvUI
 ## LoadOnDemand: 0
 ## Author: Mekhlin
-## Version: 1.0.0
+## Version: 1.0.1
 
 ElvUI_CompanionDataText.lua

@@ -82,7 +82,7 @@ local function OnEnter(self)
     DT:SetupTooltip(self)
 
     local petName = UnitName("pet")
-    local petType = UnitCreatureFamily("pet")
+    local petFamily = UnitCreatureFamily("pet")
     local petHealth = UnitHealth("pet")
     local petMaxHealth = UnitHealthMax("pet")
     local petHealthPercent = (petHealth / petMaxHealth) * 100
@@ -94,7 +94,7 @@ local function OnEnter(self)
         DT.tooltip:AddLine(TextColor(petName, "ffc0c0c0"))
     end
 
-    DT.tooltip:AddDoubleLine("Type", TextColor(petType or "Unknown", "ffffffff"))
+    DT.tooltip:AddDoubleLine(STABLE_SORT_TYPE_LABEL, TextColor(petFamily or "Unknown", "ffffffff"))
 
     if select(2, UnitClass("player")) == "HUNTER" then
         DT.tooltip:AddDoubleLine("Specialization", TextColor(GetHunterPetSpec(), "ffffffff"))
@@ -140,9 +140,9 @@ end
 
 function GetHunterPetSpec()
     local petBuffs = {
-        [264656] = "Cunning",  -- Pathfinding
-        [264662] = "Tenacity", -- Endurance Training
-        [264663] = "Ferocity"  -- Predator"s Thirst
+        [264656] = STABLE_PET_SPEC_CUNNING,  -- Pathfinding
+        [264662] = STABLE_PET_SPEC_TENACITY, -- Endurance Training
+        [264663] = STABLE_PET_SPEC_FEROCITY  -- Predator"s Thirst
     }
 
     for spellId, specName in pairs(petBuffs) do
@@ -150,7 +150,7 @@ function GetHunterPetSpec()
             return specName
         end
     end
-    return "Unknown"
+    return STABLE_PET_UNCATEGORIZED
 end
 
 function HasBuff(spellId)
