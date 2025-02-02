@@ -5,6 +5,7 @@
 ## RequiredDeps: ElvUI
 ## LoadOnDemand: 0
 ## Author: Mekhlin
-## Version: 1.0.1
+## Version: 1.1.0
 
+combat_pet.lua
 ElvUI_CompanionDataText.lua

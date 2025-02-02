@@ -6,33 +6,26 @@ local ACH = E.Libs.ACH
 
 local displayString = ""
 
-local classSupport = {
-    HUNTER      = true,
-    MAGE        = true,
-    WARLOCK     = true,
-    DEATHKNIGHT = true
-}
-
 P["CompanionDataText"] = {
-    hide_inactive_pet = false,
-    pet_name_header = false,
+    hide_inactive_pet  = false,
+    pet_name_header    = false,
+    battle_pet_tooltip = false
 }
 
--- Option page registration
 local function ConfigTable()
     local function get(info) return E.db.CompanionDataText[info[#info]] end
     local function set(info, value) E.db.CompanionDataText[info[#info]] = value; DT:ForceUpdate_DataText("CompanionDataText") end
 
     E.Options.args.CompanionDataText = ACH:Group("Companion DataText")
-    E.Options.args.CompanionDataText.args.description = ACH:Description("DataText that shows information about the active companion", 1)
-    
-    E.Options.args.CompanionDataText.args.datatext_settings = ACH:Group("DataText settings", nil, 2, nil, get, set)
+    E.Options.args.CompanionDataText.args.datatext_settings = ACH:Group("DataText", nil, 1, nil, get, set)
     E.Options.args.CompanionDataText.args.datatext_settings.inline = true
     E.Options.args.CompanionDataText.args.datatext_settings.args.hide_inactive_pet = ACH:Toggle("Hide on inactive pet", "Hide text on DataText when no companion is summoned")
-    
-    E.Options.args.CompanionDataText.args.tooltip_settings = ACH:Group("Tooltip settings", nil, 3, nil, get, set)
+
+    E.Options.args.CompanionDataText.args.tooltip_settings = ACH:Group("Tooltip settings", nil, 2, nil, get, set)
     E.Options.args.CompanionDataText.args.tooltip_settings.inline = true
-    E.Options.args.CompanionDataText.args.tooltip_settings.args.pet_name_header = ACH:Toggle("Use name as header", "Use name of companion as header on tooltip")
+    E.Options.args.CompanionDataText.args.tooltip_settings.args.pet_name_header = ACH:Toggle("Use name as header", "Use name of companion as header on tooltip", 1)
+    E.Options.args.CompanionDataText.args.tooltip_settings.args.battle_pet_tooltip = ACH:Toggle(TOOLTIP_BATTLE_PET, "Show information about summoned Battle Pet", 2)
+    E.Options.args.CompanionDataText.args.description = ACH:Description("\n\nhttps://github.com/Mekhlin/ElvUI_CompanionDataText", 3)
 end
 
 EP:RegisterPlugin(..., ConfigTable)
@@ -43,44 +36,52 @@ local function OnEvent(self, event, ...)
 end
 
 function GetDataText()
-if not HasPetSupport() then
-        return ""
-    end
 
-    if HasPetUI() then        
-        if UnitHealth("pet") == 0 then
-            return TextColor(GetPlayerClassCreatureType() .. " is dead", "ffff0000")
+    if HasCombatPetSupport() then
+        if UnitExists("pet") then
+            if IsPetDead() then
+                return TextColor(GetPlayerClassCreatureType() .. " is dead", "ffff0000")
+            end
+
+            return string.format("Active %s", GetPlayerClassCreatureType())
         end
-    
-        return string.format("Active %s", GetPlayerClassCreatureType())
+        
+        if not E.db.CompanionDataText.hide_inactive_pet then
+            return string.format("No active %s", GetPlayerClassCreatureType():lower())
+        end
     end
 
-    if not E.db.CompanionDataText.hide_inactive_pet then
-        return string.format("No active %s", GetPlayerClassCreatureType():lower())
-    end
-    
+    if E.db.CompanionDataText.battle_pet_tooltip and C_PetJournal.GetSummonedPetGUID() then
+        return TOOLTIP_BATTLE_PET
+    end    
+
     return ""
 end
 
 -- Tooltip
 local function OnEnter(self)
-    if not HasPetSupport() then
-        return
-    end
-    
-    if not HasPetUI() and E.db.CompanionDataText.hide_inactive_pet then
-        return
-    end
+    local hasCombatPet = UnitExists("pet") and HasCombatPetSupport()
+    local hasBattlePet = C_PetJournal.GetSummonedPetGUID() ~= nil
 
-    if not HasPetUI() and not E.db.CompanionDataText.hide_inactive_pet then
-        DT:SetupTooltip(self)
-        DT.tooltip:AddLine("No " .. GetPlayerClassCreatureType():lower() .. " summoned")
-        DT.tooltip:Show()
+
+    if not hasCombatPet and not hasBattlePet then
         return
     end
 
     DT:SetupTooltip(self)
 
+    if hasCombatPet then
+        SetupCombatPetTooltip()
+    end
+
+    if hasBattlePet and E.db.CompanionDataText.battle_pet_tooltip then
+        SetupBattlePetTooltip()
+    end
+
+    DT.tooltip:Show()
+end
+
+function SetupCombatPetTooltip()
     local petName = UnitName("pet")
     local petFamily = UnitCreatureFamily("pet")
     local petHealth = UnitHealth("pet")
@@ -88,84 +89,41 @@ local function OnEnter(self)
     local petHealthPercent = (petHealth / petMaxHealth) * 100
 
     if not E.db.CompanionDataText.pet_name_header then
-        DT.tooltip:AddLine(TextColor("Active " .. GetPlayerClassCreatureType(), "ffc0c0c0"))
-        DT.tooltip:AddDoubleLine("Name", TextColor(petName or "Unknown", "ffffffff"))
+        DT.tooltip:AddLine(TextColor(string.format("Active %s", GetPlayerClassCreatureType()), "ffc0c0c0"))
+        DT.tooltip:AddDoubleLine(NAME, TextColor(petName or "Unknown", "ffffffff"))
     else
         DT.tooltip:AddLine(TextColor(petName, "ffc0c0c0"))
     end
 
-    DT.tooltip:AddDoubleLine(STABLE_SORT_TYPE_LABEL, TextColor(petFamily or "Unknown", "ffffffff"))
+    DT.tooltip:AddDoubleLine(STABLE_SORT_TYPE_LABEL, TextColor(petFamily or STABLE_PET_UNCATEGORIZED, "ffffffff"))
 
     if select(2, UnitClass("player")) == "HUNTER" then
-        DT.tooltip:AddDoubleLine("Specialization", TextColor(GetHunterPetSpec(), "ffffffff"))
+        DT.tooltip:AddDoubleLine(STABLE_SORT_SPECIALIZATION_LABEL, TextColor(GetHunterPetSpec(), "ffffffff"))
     end
 
-    DT.tooltip:AddDoubleLine("Health", TextColor(string.format("%.1f%%", petHealthPercent), petHealth == petMaxHealth and "ff00ff00" or "ffff0000"))
+    DT.tooltip:AddDoubleLine(HEALTH, TextColor(string.format("%.1f%%", petHealthPercent), petHealth == petMaxHealth and "ff00ff00" or "ffff0000"))
+end
 
-    DT.tooltip:Show()
+function SetupBattlePetTooltip()
+    local petID = C_PetJournal.GetSummonedPetGUID()
+    if not petID then
+        return
+    end
+
+    local _, customName, level, xp, maxXp, _, _, name, _, petType, _, _, _, _, canBattle, _, _, _ = C_PetJournal.GetPetInfoByPetID(petID)
+    --health, maxHealth, power, speed, rarity = C_PetJournal.GetPetStats(petID)
+
+    DT.tooltip:AddLine(TextColor(TOOLTIP_BATTLE_PET, "ffc0c0c0"))
+    DT.tooltip:AddDoubleLine(NAME, TextColor((customName or name), "ffffffff"))
+    DT.tooltip:AddDoubleLine(STABLE_SORT_TYPE_LABEL, TextColor((_G["BATTLE_PET_DAMAGE_NAME_"..petType] or "Unknown type"), "ffffffff"))
+
+    local petLevelXp = ((level and level < 25) and TextColor(string.format(" (%s/%s)", xp, maxXp), "ffc0c0c0") or "")
+    DT.tooltip:AddDoubleLine(LEVEL, TextColor((level or "Unknown level"), "ffffffff") .. petLevelXp)
+    --DT.tooltip:AddDoubleLine(PET_BATTLE_STAT_QUALITY, TextColor(_G["BATTLE_PET_BREED_QUALITY"..rarity], "ffffffff"))
 end
 
 local function OnLeave(self)
     DT.tooltip:Hide()
-end
-
-function HasPetSupport()
-    local className = select(2, UnitClass("player"))
-    if className and classSupport[className] then
-        if className == "DEATHKNIGHT" then
-            local specialization = GetSpecialization()
-            if specialization then
-                return select(2, GetSpecializationInfo(specialization)) == "Unholy"
-            end
-        end
-        return classSupport[className]
-    end
-    return false
-end
-
-function GetPlayerClassCreatureType()
-    local playerClass = {
-        HUNTER      = "Pet",
-        MAGE        = "Elemental",
-        WARLOCK     = "Demon",
-        DEATHKNIGHT = "Ghoul"
-    }
-
-    local className = select(2, UnitClass("player"))
-    if className and playerClass[className] then
-        return playerClass[className]
-    end
-    return "Companion"
-end
-
-function GetHunterPetSpec()
-    local petBuffs = {
-        [264656] = STABLE_PET_SPEC_CUNNING,  -- Pathfinding
-        [264662] = STABLE_PET_SPEC_TENACITY, -- Endurance Training
-        [264663] = STABLE_PET_SPEC_FEROCITY  -- Predator"s Thirst
-    }
-
-    for spellId, specName in pairs(petBuffs) do
-        if HasBuff(spellId) then
-            return specName
-        end
-    end
-    return STABLE_PET_UNCATEGORIZED
-end
-
-function HasBuff(spellId)
-    for i = 1, 40 do
-        local auraData = C_UnitAuras.GetBuffDataByIndex("player", i)
-        if auraData == nil then
-            return false
-        end
-        
-        if auraData.spellId == spellId then
-            return true
-        end
-    end
-    
-    return false
 end
 
 function TextColor(text, hex)
@@ -177,5 +135,5 @@ local function ValueColorUpdate(self, hex, r, g, b)
 	OnEvent(self)
 end
 
-local events = { "PLAYER_ENTERING_WORLD", "UNIT_PET" }
+local events = { "PLAYER_ENTERING_WORLD", "UNIT_PET", "COMPANION_UPDATE" }
 DT:RegisterDatatext("CompanionDataText", nil, events, OnEvent, nil, nil, OnEnter, OnLeave, "Companion", nil, ValueColorUpdate)
