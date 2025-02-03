@@ -6,17 +6,18 @@ local ACH = E.Libs.ACH
 
 local displayString = ""
 
-P["CompanionDataText"] = {
-    hide_inactive_pet  = false,
-    pet_name_header    = false,
-    battle_pet_tooltip = false
+P["CompanionDataText"]  = {
+    hide_inactive_pet   = false,
+    pet_name_header     = false,
+    battle_pet_tooltip  = false,
+    battle_pet_extended = false
 }
 
 local function ConfigTable()
     local function get(info) return E.db.CompanionDataText[info[#info]] end
     local function set(info, value) E.db.CompanionDataText[info[#info]] = value; DT:ForceUpdate_DataText("CompanionDataText") end
 
-    E.Options.args.CompanionDataText = ACH:Group("Companion DataText")
+    E.Options.args.CompanionDataText = ACH:Group("|cffA67B5BCompanion DataText|r")
     E.Options.args.CompanionDataText.args.datatext_settings = ACH:Group("DataText", nil, 1, nil, get, set)
     E.Options.args.CompanionDataText.args.datatext_settings.inline = true
     E.Options.args.CompanionDataText.args.datatext_settings.args.hide_inactive_pet = ACH:Toggle("Hide on inactive pet", "Hide text on DataText when no companion is summoned")
@@ -24,8 +25,14 @@ local function ConfigTable()
     E.Options.args.CompanionDataText.args.tooltip_settings = ACH:Group("Tooltip settings", nil, 2, nil, get, set)
     E.Options.args.CompanionDataText.args.tooltip_settings.inline = true
     E.Options.args.CompanionDataText.args.tooltip_settings.args.pet_name_header = ACH:Toggle("Use name as header", "Use name of companion as header on tooltip", 1)
-    E.Options.args.CompanionDataText.args.tooltip_settings.args.battle_pet_tooltip = ACH:Toggle(TOOLTIP_BATTLE_PET, "Show information about summoned Battle Pet", 2)
-    E.Options.args.CompanionDataText.args.description = ACH:Description("\n\nhttps://github.com/Mekhlin/ElvUI_CompanionDataText", 3)
+    E.Options.args.CompanionDataText.args.tooltip_settings.args.battle_pet_tooltip = ACH:Toggle(TOOLTIP_BATTLE_PET, "Show information about summoned Battle Pet", 2)  
+    
+    E.Options.args.CompanionDataText.args.battle_pet = ACH:Group("Battle Pet", nil, 3, nil, get, set)
+    E.Options.args.CompanionDataText.args.battle_pet.inline = true    
+    E.Options.args.CompanionDataText.args.battle_pet.disabled = function() return not E.db.CompanionDataText.battle_pet_tooltip end
+    E.Options.args.CompanionDataText.args.battle_pet.args.battle_pet_extended = ACH:Toggle("Extended tooltip", "Show level and quality on Battle Pet tooltip", 1)
+    
+    E.Options.args.CompanionDataText.args.description = ACH:Description("\nhttps://github.com/Mekhlin/ElvUI_CompanionDataText", -1)
 end
 
 EP:RegisterPlugin(..., ConfigTable)
@@ -111,15 +118,16 @@ function SetupBattlePetTooltip()
     end
 
     local _, customName, level, xp, maxXp, _, _, name, _, petType, _, _, _, _, canBattle, _, _, _ = C_PetJournal.GetPetInfoByPetID(petID)
-    --health, maxHealth, power, speed, rarity = C_PetJournal.GetPetStats(petID)
-
     DT.tooltip:AddLine(TextColor(TOOLTIP_BATTLE_PET, "ffc0c0c0"))
     DT.tooltip:AddDoubleLine(NAME, TextColor((customName or name), "ffffffff"))
     DT.tooltip:AddDoubleLine(STABLE_SORT_TYPE_LABEL, TextColor((_G["BATTLE_PET_DAMAGE_NAME_"..petType] or "Unknown type"), "ffffffff"))
 
-    local petLevelXp = ((level and level < 25) and TextColor(string.format(" (%s/%s)", xp, maxXp), "ffc0c0c0") or "")
-    DT.tooltip:AddDoubleLine(LEVEL, TextColor((level or "Unknown level"), "ffffffff") .. petLevelXp)
-    --DT.tooltip:AddDoubleLine(PET_BATTLE_STAT_QUALITY, TextColor(_G["BATTLE_PET_BREED_QUALITY"..rarity], "ffffffff"))
+    if E.db.CompanionDataText.battle_pet_extended then
+        local petLevelXp = ((level and level < 25) and TextColor(string.format(" (%s/%s)", xp, maxXp), "ffc0c0c0") or "")
+        DT.tooltip:AddDoubleLine(LEVEL, TextColor((level or "Unknown level"), "ffffffff") .. petLevelXp)
+        health, maxHealth, power, speed, rarity = C_PetJournal.GetPetStats(petID)
+        DT.tooltip:AddDoubleLine(PET_BATTLE_STAT_QUALITY, TextColor(_G["BATTLE_PET_BREED_QUALITY"..rarity], "ffffffff"))
+    end
 end
 
 local function OnLeave(self)
